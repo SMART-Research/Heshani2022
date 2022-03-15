@@ -8,7 +8,7 @@ library(tidyverse)
 library(plotrix)
 library(VIM)
 library(mice)
-thematic::thematic_shiny(font = "auto")
+
 
 
 # Define UI for application that draws a histogram
