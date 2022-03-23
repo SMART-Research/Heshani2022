@@ -10,17 +10,16 @@ library(VIM)
 library(mice)
 
 
-
 # Define UI for application that draws a histogram
 ui <- fluidPage( 
 
-  titlePanel("KIT Tool"),
+  titlePanel("Tool Kit"),
   tabsetPanel(
     tabPanel("Overview", fluidRow(
                column(2,
                       fileInput(
                  "df",
-                 label = "choose the file:  csv. tx, excel or rds",
+                 label = "Choose the file:  csv. tx, excel or rds",
                  multiple = FALSE,
                  accept = c("text/csv/Excel",
                             "text/comma-separated-values,text/plain/excel",
@@ -28,7 +27,7 @@ ui <- fluidPage(
                  # Horizontal line ----
                  tags$hr(),
                  column(
-                   width = 4,
+                   width = 5,
                    align = "left",
                    fluidRow(
                      # Input: Checkbox if file has header ----
@@ -43,7 +42,7 @@ ui <- fluidPage(
                    )
                  ),
                  column(
-                   width = 4,
+                   width = 5,
                    align = "left",
                    fluidRow(
                      br(),
@@ -62,57 +61,64 @@ ui <- fluidPage(
                  fluidRow(uiOutput("varSelect"))
                 
                ),
-               column(6,dataTableOutput("dataSet")),
-               column(4,plotOutput("structure"))),
+               column(width = 6,em(h4("Data Set")),
+                   
+                   dataTableOutput("dataSet")),
+               column(4,em(h4(" Struacture of the Data Set ")),plotOutput("structure"))),
              
-             fluidRow(
+             fluidRow(em(h4("Summary of the Data Set")),
                column(6,verbatimTextOutput("summary")),
                column(6,plotOutput("correlation"))),
              ),
     
     
-  tabPanel("Outlier Analysis",
+  tabPanel(" Outlier Analysis",
              
-            fluidRow( plotOutput("aggr")),
+            fluidRow(em(h4("         Aggregations for missing values")) ,column(10,offset = 1,plotOutput("aggr")) ),
+           
             fluidRow(sidebarLayout(
-              sidebarPanel(
-                uiOutput("var6"),
-                uiOutput("var7"),
+              sidebarPanel(em(h4("Select appropriate variables ")),
+                
+                       uiOutput("var6"),
+                       uiOutput("var7"),
+                
+                
                 code(em(h3(textOutput("msg")))),
                 
                 ),
              
-              mainPanel(plotOutput("mp")),
-            )),
+              mainPanel(
+                        column(width=10,em(h4("Marginal plot")),plotOutput("mp"))),
+            ),
              
-    ), 
-    
-    
+    )), 
+   
     tabPanel("Univariate Analysis",
              sidebarLayout(
                
                sidebarPanel(
-                 
-                  uiOutput("var1"),
                   uiOutput("var2"),
+                  uiOutput("var1"),
+                  
                   sliderInput(inputId = "bins",
-                              label = "Number of bins in histogram:",
+                              label = em("Number of bins :"),
                               min = 1,
                               max = 50,
                               value = 15),
-                  sliderInput("x_range", "Range in histogram:",
-                              min = 0, max = 1000, value = c(0, 50), step = 10)
+                  sliderInput("x_range", em("Select the range to visualize :"),
+                              min = 0, max = 1000, value = c(0, 10), step = 5)
                   
                ),
                             
                mainPanel(
+                 
+                          fluidRow(
+                            column(8,offset = 2,plotOutput("bar1") ),
                          fluidRow(
-                           column(5,plotOutput("his1")),
-                           column(5,plotOutput("box1")), ),
+                           column(6,plotOutput("his1")),
+                           column(6,plotOutput("box1")), ),
                            
                          
-                         fluidRow(
-                           column(5,offset = 3,plotOutput("bar1") ),
                           )
              
                ),        
@@ -128,20 +134,31 @@ ui <- fluidPage(
                  uiOutput("var5"),
                  
                  sliderInput("x1_range", "x limit:",
-                             min = 0, max = 1000, value = c(0, 100), step = 10),
+                             min = 0, max = 1000, value = c(0, 10), step = 5),
                  sliderInput("x2_range", "y limit:",
-                             min = 0, max = 1000, value = c(0,20), step = 10)
+                             min = 0, max = 1000, value = c(0,5), step = 5)
                ),
                
                mainPanel(
                  fluidRow(
-                   column(5,offset=3,plotOutput("sct")), 
+                   column(10,em(h5("Colored Scatter Plot According to Qualitative Variable")),plotOutput("sct")), 
                   ),
                  
                  fluidRow(
+                   tabsetPanel(
+                     tabPanel("Bar Plots",
+                              column(5,
+                                     em(h5("Bar for 1st variable")), plotOutput("bar2") ),
+                              column(5,em(h5("Bar for 2nd variable")),plotOutput("bar3")), ),
+                     tabPanel("Box Plots",
+                              column(5,
+                                     em(h5("Box for 1st variable")), plotOutput("box2") ),
+                              column(5,em(h5("Box for 2nd variable")),plotOutput("box3")),
+                              ),
+                              )
+                   )
                  
-                   column(5, plotOutput("bar2") ),
-                   column(5,plotOutput("bar3")), ),
+                   
                  ),
                  
                ),        
@@ -185,7 +202,7 @@ server <- function(input, output) {
   
   output$varSelect <- renderUI({
     data <- data()
-    checkboxGroupInput("show_vars", "Columns in Data set to show:",
+    checkboxGroupInput("show_vars", "Select Colums in Data Set",
                        names(data), selected = names(data))
   }) 
   
@@ -222,17 +239,20 @@ server <- function(input, output) {
   output$his1 <- renderPlot({
     
     data <- data()
-    data <- data[,input$x]
-    bins <-  seq(min(data),max(data),length.out = input$bins+1)
-    hist(data,breaks = bins, xlim = c(input$x_range[1], input$x_range[2]),col="#75AADB",border = "white",main = input$x)
+    df <- data[,input$x]
+    
+    ggplot(data,aes(x=df)) + 
+      geom_histogram(bins=input$bins,aes(y=..density..),fill="dodgerblue4",color="white") + 
+      geom_density(lwd=1.2,linetype=2)+coord_cartesian(xlim = c(input$x_range[1], input$x_range[2]))+labs(title="Histogram with density plot", x=input$x)
   })
 
   output$box1 <- renderPlot({
     
     data <- data()
-    data <- data[,input$x]
+    df <- data[,input$x]
     
-    plot(density(data))
+    ggplot(data,aes(x="",y=df)) + 
+      geom_boxplot()+coord_cartesian(ylim = c(input$x_range[1], input$x_range[2]))+labs(title="Box plot", x=input$x)+geom_jitter(color="#56B4E9")
     
   })
   
@@ -242,14 +262,12 @@ server <- function(input, output) {
     data <- data[,input$y]
     df<- data.frame(table(data))
   ggplot(data=df, aes(x=df[,1], y=Freq)) +
-    geom_bar(stat="identity",color="blue", fill="white")+
-    xlab(input$y) +
-    ylab("Frequency") +
-    geom_text(aes(label=Freq))+theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = .5))
+    geom_bar(stat="identity",color=factor(input$y))+scale_fill_brewer(palette="Dark2")+labs(title="Bar plot", x=input$y,y="Frequency")+
+    geom_text(aes(label=Freq))+theme(axis.text.x = element_text( hjust = 1, vjust = .5))
   })
   
 
-  #------------Mutivariate ----------------------
+  #------------Multivariate ----------------------
   
   output$var3 <- renderUI({
     data <- data()
@@ -275,9 +293,11 @@ server <- function(input, output) {
     data <- data()
     data <- data[,c(input$k,input$l,input$m)]
   
-    ggplot(data=data,aes(x=data[,1],y=data[,2],col=data[,3]) )+geom_point() 
+    ggplot(data=data,aes(x=data[,1],y=data[,2],col=data[,3]) )+geom_point()+labs(title ="",x=input$k,y=input$l) +guides(col=guide_legend(input$m)) +coord_cartesian(xlim = c(input$x1_range[1], input$x1_range[2]),ylim = c(input$x2_range[1], input$x2_range[2]) )
     
-  })
+  }) 
+    
+ 
   output$bar2 <- renderPlot({
     data <- data()
     data <- data[,c(input$k,input$l,input$m)]
@@ -293,6 +313,22 @@ server <- function(input, output) {
     
   })
   
+  output$box2 <- renderPlot({
+    data <- data()
+    df <- data[,c(input$k,input$l,input$m)]
+    
+    ggplot(data,aes_string(x=input$m,y=input$k)) + 
+      geom_boxplot()+coord_cartesian(ylim = c(input$x1_range[1], input$x1_range[2]))+labs( y=input$k,x=input$m)+geom_jitter(color="#56B4E9")
+    
+  })
+  output$box3 <- renderPlot({
+    data <- data()
+    data <- data[,c(input$k,input$l,input$m)]
+    
+    ggplot(data,aes_string(x=input$m,y=input$l)) + 
+      geom_boxplot()+coord_cartesian(ylim = c(input$x2_range[1], input$x2_range[2]))+labs( y=input$l,x=input$m)+geom_jitter(color=3)
+    
+  })
   
   
   #------------- Outliers analysis -----------
@@ -310,13 +346,13 @@ server <- function(input, output) {
   output$var7 <- renderUI({
     data <- data()
     numericVar <- select_if(data,is.numeric)
-    selectInput("p","Select 2st quantitaive variable:",names(numericVar) )
+    selectInput("p","Select 2nd quantitaive variable:",names(numericVar) )
   })
   
   output$mp <- renderPlot({
     data <- data()
     data <- data[,c(input$o,input$p)]
-    marginplot(data)
+    marginplot(data,alpha = 0.8)
   }
   )
   
