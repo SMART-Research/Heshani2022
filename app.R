@@ -105,8 +105,7 @@ ui <- fluidPage(
                               min = 1,
                               max = 50,
                               value = 15),
-                  sliderInput("x_range", em("Select the range to visualize :"),
-                              min = 0, max = 1000, value = c(0, 10), step = 5)
+                  uiOutput("k1"),
                   
                ),
                             
@@ -133,10 +132,8 @@ ui <- fluidPage(
                  uiOutput("var4"),
                  uiOutput("var5"),
                  
-                 sliderInput("x1_range", "x limit:",
-                             min = 0, max = 1000, value = c(0, 10), step = 5),
-                 sliderInput("x2_range", "y limit:",
-                             min = 0, max = 1000, value = c(0,5), step = 5)
+                 uiOutput("k2"),
+                 uiOutput("k3")
                ),
                
                mainPanel(
@@ -235,6 +232,15 @@ server <- function(input, output) {
     selectInput("y","Select qualitative variable:",names(chaVar) )
   }) 
   
+  output$k1 <- renderUI({
+    data <- data()
+    df <- data[,input$x]
+    max1 <- max(df,na.rm = T) + 3
+    min1 <- min(df,na.rm = T) - 3
+    
+    sliderInput("x_range", em("Select the range to visualize :"),
+                min = min1, max = max1, value = c(0, 10), step = 5)
+  })
   
   output$his1 <- renderPlot({
     
@@ -261,9 +267,9 @@ server <- function(input, output) {
     data <- data()
     data <- data[,input$y]
     df<- data.frame(table(data))
-  ggplot(data=df, aes(x=df[,1], y=Freq)) +
-    geom_bar(stat="identity",color=factor(input$y))+scale_fill_brewer(palette="Dark2")+labs(title="Bar plot", x=input$y,y="Frequency")+
-    geom_text(aes(label=Freq))+theme(axis.text.x = element_text( hjust = 1, vjust = .5))
+  ggplot(data=df, aes(x=df[,1], y=Freq,fill=df[,1])) +
+    geom_bar(stat="identity")+labs(title="Bar plot", x=input$y,y="Frequency")+guides(col=guide_legend(input$y))+
+    geom_text(aes(label=Freq))#+theme(axis.text.x = element_text( hjust = 1, vjust = .5))
   })
   
 
@@ -296,8 +302,27 @@ server <- function(input, output) {
     ggplot(data=data,aes(x=data[,1],y=data[,2],col=data[,3]) )+geom_point()+labs(title ="",x=input$k,y=input$l) +guides(col=guide_legend(input$m)) +coord_cartesian(xlim = c(input$x1_range[1], input$x1_range[2]),ylim = c(input$x2_range[1], input$x2_range[2]) )
     
   }) 
+  
+  output$k2 <- renderUI({
+    data <- data()
+    df <- data[,input$k]
+    max2 <- max(df,na.rm = T) + 3
+    min2 <- min(df,na.rm = T) - 3
     
- 
+    sliderInput("x1_range", "limits of 1st variable:",
+                min = min2, max = max2, value = c(0, 10), step = 2)
+  })
+  
+  output$k3 <- renderUI({
+    data <- data()
+    df <- data[,input$l]
+    max3 <- max(df,na.rm = T) + 3
+    min3 <- min(df,na.rm = T) - 3
+    
+    sliderInput("x2_range", "limits of 2nd variable:",
+                min = min3, max = max3, value = c(0, 10), step = 2)
+  })
+  
   output$bar2 <- renderPlot({
     data <- data()
     data <- data[,c(input$k,input$l,input$m)]
